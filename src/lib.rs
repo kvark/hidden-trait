@@ -5,24 +5,47 @@ fn impl_expose(input_stream: TokenStream) -> syn::Result<proc_macro2::TokenStrea
     let item_impl = syn::parse::<syn::ItemImpl>(input_stream)?;
     let mut implementations = Vec::new();
 
-    for item_orig in item_impl.items.iter() {
-        let mut item = item_orig.clone();
-        let vis = match item {
-            syn::ImplItem::Const(ref mut impl_const) => &mut impl_const.vis,
-            syn::ImplItem::Method(ref mut impl_method) => &mut impl_method.vis,
-            syn::ImplItem::Type(ref mut impl_type) => &mut impl_type.vis,
+    let self_ty = &item_impl.self_ty;
+    let trait_name = match item_impl.trait_ {
+        Some((_, ref path, _)) => path,
+        None => {
+            return Err(syn::Error::new(
+                item_impl.impl_token.span,
+                "Impl must be for a trait",
+            ))
+        }
+    };
+
+    for item in item_impl.items.iter() {
+        implementations.push(match *item {
+            syn::ImplItem::Const(ref impl_const) => {
+                let name = &impl_const.ident;
+                let ty = &impl_const.ty;
+                quote! {
+                    pub const #name: #ty = <#self_ty as #trait_name>::#name;
+                }
+            }
+            syn::ImplItem::Type(ref impl_type) => {
+                let name = &impl_type.ident;
+                quote! {
+                    pub type #name = <#self_ty as #trait_name>::#name;
+                }
+            }
+            syn::ImplItem::Method(ref impl_method) => {
+                let signature = &impl_method.sig;
+                let name = &signature.ident;
+                quote! {
+                    pub #signature {
+                        #trait_name::#name(self)
+                    }
+                }
+            }
             _ => continue,
-        };
-        *vis = syn::Visibility::Public(syn::VisPublic {
-            pub_token: syn::token::Pub {
-                span: proc_macro2::Span::call_site(),
-            },
         });
-        implementations.push(item);
     }
 
-    let self_ty = &item_impl.self_ty;
     Ok(quote! {
+        #item_impl
         impl #self_ty {
             #(#implementations)*
         }
