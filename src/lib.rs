@@ -38,9 +38,17 @@ fn impl_expose(input_stream: TokenStream) -> syn::Result<proc_macro2::TokenStrea
             syn::ImplItem::Method(ref impl_method) => {
                 let signature = &impl_method.sig;
                 let name = &signature.ident;
+                let arguments = signature
+                    .inputs
+                    .iter()
+                    .filter_map(|fn_arg| match *fn_arg {
+                        syn::FnArg::Receiver(_) => None,
+                        syn::FnArg::Typed(ref pat_ty) => Some(pat_ty.pat.as_ref()),
+                    })
+                    .collect::<Vec<_>>();
                 quote! {
                     pub #signature {
-                        #trait_name::#name(self)
+                        #trait_name::#name(self, #(#arguments),*)
                     }
                 }
             }

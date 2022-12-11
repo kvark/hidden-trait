@@ -2,7 +2,7 @@ mod hidden {
     trait Foo {
         type Goal;
         const GOAL: Self::Goal;
-        fn foo(&self) -> u32;
+        fn foo(&self, other: bool) -> u32;
     }
 
     pub struct Bar;
@@ -11,7 +11,7 @@ mod hidden {
     impl Foo for Bar {
         type Goal = f32;
         const GOAL: f32 = 1.0;
-        fn foo(&self) -> u32 {
+        fn foo(&self, _other: bool) -> u32 {
             42
         }
     }
@@ -20,6 +20,6 @@ mod hidden {
 fn main() {
     let bar = hidden::Bar;
     // calling the trait method as if it's ours
-    bar.foo();
+    bar.foo(false);
     let _ = hidden::Bar::GOAL;
 }
