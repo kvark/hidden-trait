@@ -1,7 +1,7 @@
 mod hidden {
     trait Foo {
-        //type Goal;
-        const GOAL: f32;
+        type Goal;
+        const GOAL: Self::Goal;
         fn foo(&self) -> u32;
     }
 
@@ -9,7 +9,7 @@ mod hidden {
 
     #[hidden_trait::expose]
     impl Foo for Bar {
-        //type Goal = f32;
+        type Goal = f32;
         const GOAL: f32 = 1.0;
         fn foo(&self) -> u32 {
             42

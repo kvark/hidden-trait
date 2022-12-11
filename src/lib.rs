@@ -1,6 +1,10 @@
 use proc_macro::TokenStream;
 use quote::quote;
 
+// Currently forwarding the type leads to
+// error[E0658]: inherent associated types are unstable
+const FORWARD_ASSICIATED_TYPES: bool = false;
+
 fn impl_expose(input_stream: TokenStream) -> syn::Result<proc_macro2::TokenStream> {
     let item_impl = syn::parse::<syn::ItemImpl>(input_stream)?;
     let mut implementations = Vec::new();
@@ -25,7 +29,7 @@ fn impl_expose(input_stream: TokenStream) -> syn::Result<proc_macro2::TokenStrea
                     pub const #name: #ty = <#self_ty as #trait_name>::#name;
                 }
             }
-            syn::ImplItem::Type(ref impl_type) => {
+            syn::ImplItem::Type(ref impl_type) if FORWARD_ASSICIATED_TYPES => {
                 let name = &impl_type.ident;
                 quote! {
                     pub type #name = <#self_ty as #trait_name>::#name;
